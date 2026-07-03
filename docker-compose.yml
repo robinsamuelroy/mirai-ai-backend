@@ -1,0 +1,94 @@
+# docker-compose.yml
+
+version: "3.9"
+
+services:
+
+  # ── PostgreSQL Database ──────────────────────────────
+  db:
+    image: postgres:15-alpine
+    # alpine variant — much smaller image size
+    container_name: ai_assistant_db
+
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Robin@01
+      POSTGRES_DB: ai_assistant_db
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # named volume — data persists when container restarts
+      # without this, all data is lost on container stop
+
+    ports:
+      - "5433:5432"
+      # host:container
+      # 5433 on your machine → 5432 inside container
+      # use 5433 so it doesn't conflict with your local PostgreSQL
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # waits until PostgreSQL is actually ready before app starts
+      # without this, app starts before DB is ready → crash
+
+  # ── ChromaDB Vector Store ────────────────────────────
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ai_assistant_chroma
+
+    volumes:
+      - chroma_data:/chroma/chroma
+      # persists vector data across restarts
+
+    ports:
+      - "8001:8000"
+      # ChromaDB runs on 8000 inside container
+      # map to 8001 on host to avoid conflict with our app
+
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+
+  # ── FastAPI Application ──────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai_assistant_app
+
+    env_file:
+      - .env.docker
+      # loads all env vars from this file
+
+    volumes:
+      - ./uploads:/app/uploads
+      # mounts local uploads folder into container
+      # files survive container rebuilds
+
+      - ./chroma_db:/app/chroma_db
+      # persists ChromaDB data locally too
+
+    ports:
+      - "8000:8000"
+
+    depends_on:
+      db:
+        condition: service_healthy
+        # waits for db healthcheck to pass before starting
+      chromadb:
+        condition: service_started
+
+    command: >
+      uvicorn src.app.main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+
+volumes:
+  postgres_data:
+  chroma_data:
+  # named volumes managed by Docker
+  # survive container restarts and removals
