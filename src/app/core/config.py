@@ -1,5 +1,7 @@
-from pydantic_settings import BaseSettings
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
+BASE_DIR = Path(__file__).resolve().parents[3]
 class Settings(BaseSettings):
 # Project info
     PROJECT_NAME: str
@@ -25,6 +27,12 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: str
 
+    model_config = SettingsConfigDict(
+        env_file=BASE_DIR / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
     @property
     def DATABASE_URL(self) -> str:
             import urllib.parse
@@ -34,10 +42,6 @@ class Settings(BaseSettings):
     @property
     def MAX_FILE_SIZE_BYTES(self) -> int:
         return self.MAX_FILE_SIZE_MB * 1024 * 1024
-
-    class Config:
-            env_file = ".env"
-            env_file_encoding = "utf-8"
 
 
 settings = Settings()
