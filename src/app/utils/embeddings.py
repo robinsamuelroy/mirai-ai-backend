@@ -1,11 +1,11 @@
-from sentence_transformers import SentenceTransformer
 from typing import List
+from sentence_transformers import SentenceTransformer
+from src.app.core.config import settings
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-#   - small and fast
-#   - 384 dimensional vectors
-#   - good quality for semantic search
-#   - downloads automatically on first run (~80MB)
+model = SentenceTransformer(
+    "all-MiniLM-L6-v2",
+    token=settings.HF_TOKEN,
+)
 
 def generate_embedding(text: str) -> List[float]:
     embedding = model.encode(text, convert_to_numpy=True)
