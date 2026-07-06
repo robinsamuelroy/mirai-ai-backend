@@ -1,6 +1,6 @@
 from typing import List
 from sentence_transformers import SentenceTransformer
-from src.app.core.config import settings
+from app.core.config import settings
 
 model = SentenceTransformer(
     "all-MiniLM-L6-v2",
