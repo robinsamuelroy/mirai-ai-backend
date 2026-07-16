@@ -1,11 +1,11 @@
 # src/app/schemas/rag.py
-
+from typing import Optional
 from pydantic import BaseModel
 
 
 class RAGRequest(BaseModel):
     question: str
-    document_id: int = None
+    document_id: Optional[int] = None
     top_k: int = 5
 
 
